@@ -19,18 +19,24 @@ import mediasoup from "mediasoup";
 dotenv.config();
 const app = express();
 
-app.use(cors({ 
-  origin: [
-    process.env.FRONTEND_URL,
-    'https://code-room-nqcmi5rke-ramakrishna118gs-projects.vercel.app',
-    'http://localhost:5173'
-  ],
+app.use(cors({
+  origin: function(origin, callback) {
+    const allowed = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ];
+    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.options('*', cors());
+app.options('(.*)', cors());
 app.use(express.json());
 
 app.get("/", (req, res) => res.send("API working 🚀"));
