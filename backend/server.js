@@ -52,15 +52,20 @@ const transporter = nodemailer.createTransport({
 // ── Auth routes ───────────────────────────────────────────────────────────────
 
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user)
-    return res.status(404).json({ success: false, message: "User Not Found" });
-  const ismatch = await bcrypt.compare(password, user.password);
-  if (!ismatch)
-    return res.status(401).json({ success: false, message: "Invalid Credentials" });
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7h" });
-  res.status(200).json({ success: true, token });
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user)
+      return res.status(404).json({ success: false, message: "User Not Found" });
+    const ismatch = await bcrypt.compare(password, user.password);
+    if (!ismatch)
+      return res.status(401).json({ success: false, message: "Invalid Credentials" });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7h" });
+    res.status(200).json({ success: true, token });
+  } catch (err) {
+    console.error("Login error:", err); // ← will show in Render logs
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 const otpStore = new Map();
