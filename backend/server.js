@@ -12,7 +12,6 @@ import cors from "cors";
 import User from "./models/users.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { Resend } from "resend";
 import confData from "./models/conferencedata.js";
 import mediasoup from "mediasoup";
 
@@ -40,12 +39,6 @@ app.use(express.json());
 
 app.get("/", (req, res) => res.send("API working 🚀"));
 
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // ── Auth routes ───────────────────────────────────────────────────────────────
 
 app.post("/login", async (req, res) => {
@@ -60,50 +53,24 @@ app.post("/login", async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7h" });
     res.status(200).json({ success: true, token });
   } catch (err) {
-    console.error("Login error:", err); // ← will show in Render logs
+    console.error("Login error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-const otpStore = new Map();
-
 app.post("/signup", async (req, res) => {
-  const { username, password, originalname, email } = req.body;
-  const isused = await User.findOne({ username });
-  if (isused)
-    return res.status(400).json({ success: false, message: "Username already taken" });
-  const otp = generateOTP();
-  otpStore.set(email, {
-    otp,
-    expires: Date.now() + 5 * 60 * 1000,
-    userData: { username, password, originalname, email },
-  });
-  await resend.emails.send({
-    from: "onboarding@resend.dev",
-    to: email,
-    subject: "OTP Verification",
-    text: `Your OTP is ${otp}`,
-  });
-  console.log("--- OTP SENT ---");
-  res.json({ success: true, message: "OTP sent to email" });
-});
-
-app.post("/verify-otp", async (req, res) => {
-  const { email, otp } = req.body;
-  const storedData = otpStore.get(email);
-  if (!storedData)
-    return res.status(400).json({ success: false, message: "OTP expired" });
-  if (Date.now() > storedData.expires) {
-    otpStore.delete(email);
-    return res.status(400).json({ success: false, message: "OTP expired" });
+  try {
+    const { username, password, originalname, email } = req.body;
+    const isused = await User.findOne({ username });
+    if (isused)
+      return res.status(400).json({ success: false, message: "Username already taken" });
+    const newuser = new User({ username, password, originalname, email });
+    await newuser.save();
+    res.status(201).json({ success: true, message: "Account created successfully" });
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
-  if (storedData.otp !== otp)
-    return res.status(400).json({ success: false, message: "Invalid OTP" });
-
-  const newuser = new User(storedData.userData);
-  await newuser.save();
-  otpStore.delete(email);
-  res.status(200).json({ success: true, message: "Account created successfully" });
 });
 
 // ── HTTP + Socket.IO ──────────────────────────────────────────────────────────
@@ -151,22 +118,13 @@ let router;
   console.log("Mediasoup router ready");
 })();
 
-// keyed as `${socket.id}-send` or `${socket.id}-recv`
 const transports = new Map();
-
-// keyed by producerId → { producer, socketId, roomId }
 const producers = new Map();
-
-// track consumers so we can resume them after client attaches the track
 const consumers = new Map();
-
-// track which conference room each socket is currently in
 const socketRooms = new Map();
 
-// ── Helper: announced IP (same for both send and recv transports) ─────────────
 const ANNOUNCED_IP = process.env.PUBLIC_IP || "192.168.1.39";
 
-// ── Helper: all producer IDs in a room, excluding one socket ─────────────────
 function getProducersInRoom(roomId, excludeSocketId) {
   const result = [];
   for (const [producerId, data] of producers.entries()) {
@@ -177,7 +135,6 @@ function getProducersInRoom(roomId, excludeSocketId) {
   return result;
 }
 
-// ── Helper: full cleanup for a socket on disconnect or leave ─────────────────
 function cleanupSocket(socket, roomId) {
   const sendT = transports.get(`${socket.id}-send`);
   const recvT = transports.get(`${socket.id}-recv`);
@@ -250,31 +207,31 @@ io.on("connection", (socket) => {
   // ── Conference: Create ────────────────────────────────────────
 
   socket.on("create-conference", async ({ type, password }, callback) => {
-  const roomId = uuidv4();
-  socket.join(roomId);
-  socketRooms.set(socket.id, roomId);
-  const nconf = new confData({ conftype: type, confid: roomId, hostid: socket.user.userId, password });
-  await nconf.save();
-  console.log("conf created:", roomId);
-  callback({ roomId }); // ✅ ack instead of socket.emit
-});
+    const roomId = uuidv4();
+    socket.join(roomId);
+    socketRooms.set(socket.id, roomId);
+    const nconf = new confData({ conftype: type, confid: roomId, hostid: socket.user.userId, password });
+    await nconf.save();
+    console.log("conf created:", roomId);
+    callback({ roomId });
+  });
 
   // ── Conference: Join ──────────────────────────────────────────
 
   socket.on("join-conference", async ({ roomId, password }, callback) => {
-  const conf = await confData.findOne({ confid: roomId, password });
-  if (!conf) return callback({ error: "Wrong Room ID or password" });
+    const conf = await confData.findOne({ confid: roomId, password });
+    if (!conf) return callback({ error: "Wrong Room ID or password" });
 
-  // ✅ Clean up any stale transports from previous failed attempts
-  const oldSend = transports.get(`${socket.id}-send`);
-  const oldRecv = transports.get(`${socket.id}-recv`);
-  if (oldSend) { oldSend.close(); transports.delete(`${socket.id}-send`); }
-  if (oldRecv) { oldRecv.close(); transports.delete(`${socket.id}-recv`); }
+    const oldSend = transports.get(`${socket.id}-send`);
+    const oldRecv = transports.get(`${socket.id}-recv`);
+    if (oldSend) { oldSend.close(); transports.delete(`${socket.id}-send`); }
+    if (oldRecv) { oldRecv.close(); transports.delete(`${socket.id}-recv`); }
 
-  socket.join(roomId);
-  socketRooms.set(socket.id, roomId);
-  callback({ type: conf.conftype });
-});
+    socket.join(roomId);
+    socketRooms.set(socket.id, roomId);
+    callback({ type: conf.conftype });
+  });
+
   // ── Mediasoup: Router capabilities ───────────────────────────
 
   socket.on("getRouterRtpCapabilities", (callback) => {
@@ -285,14 +242,12 @@ io.on("connection", (socket) => {
 
   socket.on("createTransport", async (_, callback) => {
     const transport = await router.createWebRtcTransport({
-      listenIps: [{ ip: "0.0.0.0", announcedIp: ANNOUNCED_IP }], // ✅ uses shared constant
+      listenIps: [{ ip: "0.0.0.0", announcedIp: ANNOUNCED_IP }],
       enableUdp: true,
       enableTcp: true,
       preferUdp: true,
     });
-
     transports.set(`${socket.id}-send`, transport);
-
     callback({
       id:             transport.id,
       iceParameters:  transport.iceParameters,
@@ -315,14 +270,12 @@ io.on("connection", (socket) => {
 
   socket.on("createRecvTransport", async (_, callback) => {
     const transport = await router.createWebRtcTransport({
-      listenIps: [{ ip: "0.0.0.0", announcedIp: ANNOUNCED_IP }], // ✅ fixed: was "127.0.0.1"
+      listenIps: [{ ip: "0.0.0.0", announcedIp: ANNOUNCED_IP }],
       enableUdp: true,
       enableTcp: true,
       preferUdp: true,
     });
-
     transports.set(`${socket.id}-recv`, transport);
-
     callback({
       id:             transport.id,
       iceParameters:  transport.iceParameters,
@@ -344,29 +297,25 @@ io.on("connection", (socket) => {
   // ── Mediasoup: Produce ────────────────────────────────────────
 
   socket.on("produce", async ({ kind, rtpParameters }, callback) => {
-  try {
-    const transport = transports.get(`${socket.id}-send`);
-    const roomId = socketRooms.get(socket.id);
-
-    // ✅ ADD THIS — without it, new-producer is emitted to undefined room
-    if (!roomId) {
-      console.warn("produce called but socket has no roomId:", socket.id);
-      return callback({ error: "not in a room" });
+    try {
+      const transport = transports.get(`${socket.id}-send`);
+      const roomId = socketRooms.get(socket.id);
+      if (!roomId) {
+        console.warn("produce called but socket has no roomId:", socket.id);
+        return callback({ error: "not in a room" });
+      }
+      const producer = await transport.produce({ kind, rtpParameters });
+      producers.set(producer.id, { producer, socketId: socket.id, roomId });
+      callback({ id: producer.id });
+      socket.to(roomId).emit("new-producer", { producerId: producer.id });
+    } catch (err) {
+      if (err.message.includes("MID already exists")) {
+        console.warn("Duplicate produce ignored for socket:", socket.id);
+        return callback({ error: "duplicate" });
+      }
+      throw err;
     }
-
-    const producer = await transport.produce({ kind, rtpParameters });
-    producers.set(producer.id, { producer, socketId: socket.id, roomId });
-    callback({ id: producer.id });
-    socket.to(roomId).emit("new-producer", { producerId: producer.id });
-
-  } catch (err) {
-    if (err.message.includes("MID already exists")) {
-      console.warn("Duplicate produce ignored for socket:", socket.id);
-      return callback({ error: "duplicate" });
-    }
-    throw err;
-  }
-});
+  });
 
   // ── Mediasoup: Get existing producers ────────────────────────
 
@@ -382,18 +331,14 @@ io.on("connection", (socket) => {
     if (!router.canConsume({ producerId, rtpCapabilities })) {
       return callback({ error: "Cannot consume" });
     }
-
     const transport = transports.get(`${socket.id}-recv`);
     if (!transport) return callback({ error: "No recv transport" });
-
     const consumer = await transport.consume({
       producerId,
       rtpCapabilities,
       paused: true,
     });
-
     consumers.set(consumer.id, consumer);
-
     callback({
       id:            consumer.id,
       producerId,
