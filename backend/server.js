@@ -12,7 +12,7 @@ import cors from "cors";
 import User from "./models/users.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import confData from "./models/conferencedata.js";
 import mediasoup from "mediasoup";
 
@@ -44,15 +44,7 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ── Auth routes ───────────────────────────────────────────────────────────────
 
@@ -86,8 +78,8 @@ app.post("/signup", async (req, res) => {
     expires: Date.now() + 5 * 60 * 1000,
     userData: { username, password, originalname, email },
   });
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+  await resend.emails.send({
+    from: "onboarding@resend.dev",
     to: email,
     subject: "OTP Verification",
     text: `Your OTP is ${otp}`,
