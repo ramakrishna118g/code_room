@@ -12,7 +12,7 @@ function Sidebar(){
 
   function logout(){
     localStorage.clear();
-    navigate("/login");
+    navigate("/");
   }
 
   return(
