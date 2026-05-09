@@ -1,0 +1,55 @@
+#sidebar{
+  width: 220px;
+  background: linear-gradient(to right,rgb(0, 15, 45),rgb(0, 0, 0));
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 15px;
+  height: 100vh;
+  font-family: "Inter", sans-serif;
+
+  box-sizing: border-box;   /* prevents extra height */
+}
+
+/* logo */
+.logo{
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+/* nav links */
+.nav-links{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* buttons */
+#sidebar button{
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+#sidebar button:hover{
+  background: #1e293b;
+}
+
+/* logout button */
+.logout{
+  margin-top: auto;
+  background: #ef4444 !important;
+}
+
+.logout:hover{
+  background: #dc2626 !important;
+}
+
+

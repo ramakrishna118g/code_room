@@ -1,0 +1,255 @@
+/* page background same as home */
+.conf-page{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  background: linear-gradient(120deg,#090014,#20002c,#3a0040);
+  font-family: "Segoe UI", sans-serif;
+  color:white;
+}
+
+/* glass card */
+.conf-card{
+  width:380px;
+  padding:35px;
+
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+
+  border-radius:16px;
+  box-shadow: 0 0 25px rgba(255,0,255,0.15);
+
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+/* title */
+.conf-title{
+  font-size:26px;
+  font-weight:600;
+  text-align:center;
+}
+
+/* labels */
+.conf-label{
+  font-size:14px;
+  opacity:0.8;
+}
+
+/* dropdown */
+.conf-select{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  outline:none;
+
+  background:#140020;
+  color:white;
+
+  font-size:14px;
+}
+
+/* input */
+.conf-input{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  outline:none;
+
+  background:#140020;
+  color:white;
+
+  font-size:14px;
+}
+
+/* button */
+.conf-btn{
+  margin-top:10px;
+  padding:12px;
+
+  border:none;
+  border-radius:10px;
+
+  background: linear-gradient(90deg,#ff00cc,#7a00ff);
+  color:white;
+
+  font-weight:600;
+  cursor:pointer;
+
+  transition:0.2s;
+}
+
+.conf-btn:hover{
+  transform: translateY(-2px);
+  box-shadow:0 5px 20px rgba(255,0,255,0.3);
+}
+
+/* status text */
+.conf-status{
+  font-size:13px;
+  color:#ff9cff;
+}
+
+/* video preview */
+.conf-video{
+  margin-top:25px;
+  width:420px;
+  border-radius:12px;
+  box-shadow:0 0 20px rgba(255,0,255,0.2);
+}
+
+/* overall layout */
+.layout{
+  display:flex;
+}
+
+/* right side area */
+.conf-page{
+  flex:1;
+  min-height:100vh;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  background: linear-gradient(120deg,#090014,#20002c,#3a0040);
+}
+
+/* ================= CONFERENCE PAGE ================= */
+
+#conference-container{
+  flex:1;
+  height:100vh;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  background: linear-gradient(to right, black, rgb(58,5,51));
+
+  font-family: "Inter", sans-serif;
+  color:white;
+}
+
+
+/* conference card */
+#conference-box{
+  width:420px;
+
+  padding:40px 35px;
+
+  background: rgba(15, 0, 30, 0.85);
+
+  border-radius:18px;
+
+  box-shadow:
+    0 0 25px rgba(128, 0, 255, 0.25),
+    0 0 60px rgba(255, 0, 120, 0.15);
+
+  backdrop-filter: blur(8px);
+
+  display:flex;
+  flex-direction:column;
+
+  gap:18px;
+}
+
+
+/* heading */
+#conference-box h1{
+  text-align:center;
+  font-weight:600;
+  letter-spacing:1px;
+}
+
+
+/* labels */
+#conference-box p{
+  font-size:14px;
+  margin-bottom:3px;
+  color:#d6d6ff;
+}
+
+
+/* dropdown */
+#conference-box select{
+  width:100%;
+  padding:12px;
+
+  border-radius:10px;
+
+  border:1px solid rgba(255,255,255,0.15);
+
+  background: rgba(0,0,0,0.5);
+  color:white;
+
+  outline:none;
+}
+
+
+/* password input */
+#conference-box input{
+  width:100%;
+  padding:12px;
+
+  border-radius:10px;
+
+  border:1px solid rgba(255,255,255,0.15);
+
+  background:#030112;
+  color:white;
+
+  outline:none;
+}
+
+
+/* create button */
+#conference-box button{
+  margin-top:10px;
+
+  padding:13px;
+
+  border-radius:12px;
+
+  border:none;
+
+  background: linear-gradient(90deg,#ff00cc,#6a00ff);
+
+  color:white;
+
+  font-size:15px;
+  font-weight:600;
+
+  cursor:pointer;
+
+  transition:0.2s;
+}
+
+
+#conference-box button:hover{
+  transform: translateY(-2px);
+  box-shadow:0 6px 18px rgba(170,0,255,0.35);
+}
+
+
+/* video preview */
+#local-video{
+  margin-top:20px;
+
+  width:420px;
+
+  border-radius:15px;
+
+  box-shadow:
+    0 0 25px rgba(128, 0, 255, 0.25),
+    0 0 60px rgba(255, 0, 120, 0.15);
+}
+
+#tab-row button{
+  color: black;
+  margin: 45px;
+  background: whitesmoke;
+}
