@@ -19,7 +19,7 @@ import mediasoup from "mediasoup";
 dotenv.config();
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(cors({ origin: [process.env.FRONTEND_URL,'https://code-room-nqcmi5rke-ramakrishna118gs-projects.vercel.app/'], credentials: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => res.send("API working 🚀"));
